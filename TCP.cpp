@@ -10,7 +10,22 @@
 #pragma comment(lib, "ws2_32.lib")  // Link with ws2_32.lib
 
 
-
+std::string getStrOfPacketType(PacketType pt) {
+    switch (pt) {
+    case PacketType::OK_RESPONSE: {
+        return "RESPONSE_OK";
+    }
+    case PacketType::ERROR_RESPONSE: {
+         return "RESPONSE_ERROR";
+    }
+    case PacketType::OK_REQUEST: {
+        return "REQUEST_OK";
+    }
+    case PacketType::ERROR_REQUEST: {
+        return "REQUEST_ERROR";
+    }
+    }
+}
 
 std::vector<ClientData> clients;
 const char* identify_num = "\xAF\xAA\xAF";
@@ -23,17 +38,17 @@ bool isPacketValid(Header header) {
     return true;
 }
 
-void sendMessageToClient(SOCKET client, std::string headerCMD, std::string message) {
+void sendMessageToClient(SOCKET client, std::string headerCMD, std::string message, PacketType type) {
     // Respond with information
     Header responseHeader;
     strcpy(responseHeader.identity, identify_num);
     responseHeader.ID_packet = 124;  // Example response packet ID
-    responseHeader.packetType = 2;   // Example response packet type
+    responseHeader.packetType = type;   // Example response packet type
     strcpy(responseHeader.command, headerCMD.c_str());
 
     std::string responseData = message;
     int dataSize = responseData.size();
-
+    std::cout << "Send message to client: " << client << " | Type: " << getStrOfPacketType(type) << std::endl;
     // Send the response header and data in a single block
     send(client, reinterpret_cast<char*>(&responseHeader), sizeof(responseHeader), 0);
     send(client, reinterpret_cast<char*>(&dataSize), sizeof(dataSize), 0);
@@ -45,14 +60,14 @@ void handleClient(SOCKET clientSocket) {
     while (true) {
         int bytesReceived = recv(clientSocket, reinterpret_cast<char*>(&header), sizeof(header), 0);
         if (bytesReceived == sizeof(header) && isPacketValid(header)) {
-            std::cout << "Received packet from client " << clientSocket << ": Type " << static_cast<int>(header.packetType) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
+            std::cout << "Received packet from client " << clientSocket << ": Type " << getStrOfPacketType(PacketType(header.packetType)) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
 
             // Handle the command
             if (strcmp(header.command, "GET_INFO") == 0) {
-                sendMessageToClient(clientSocket, "INFO_RESPONSE", "This is response to your GET_INFO command");
+                sendMessageToClient(clientSocket, "INFO_RESPONSE", "This is response to your GET_INFO command", PacketType::OK_RESPONSE);
             }
             else {
-                sendMessageToClient(clientSocket, "ERROR_RESPONSE", "Unknown command");
+                sendMessageToClient(clientSocket, "ERROR_RESPONSE", "Unknown command", PacketType::ERROR_RESPONSE);
             }
         }
     }
