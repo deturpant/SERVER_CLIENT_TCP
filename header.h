@@ -5,6 +5,7 @@
 
 #pragma pack(push, 1)  // Pack structure tightly
 struct Header {
+    byte version;
     char identity[3];
     short ID_packet;
     char packetType;

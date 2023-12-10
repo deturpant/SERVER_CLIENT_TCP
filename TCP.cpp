@@ -35,12 +35,14 @@ bool isPacketValid(Header header) {
     for (int i = 0; i < 3; i++) {
         if (header.identity[i] != identify_num[i]) return false;
     }
+    if (header.version != 1) return false;
     return true;
 }
 
 void sendMessageToClient(SOCKET client, std::string headerCMD, std::string message, PacketType type) {
     // Respond with information
     Header responseHeader;
+    responseHeader.version = 1;
     strcpy(responseHeader.identity, identify_num);
     responseHeader.ID_packet = 124;  // Example response packet ID
     responseHeader.packetType = type;   // Example response packet type
