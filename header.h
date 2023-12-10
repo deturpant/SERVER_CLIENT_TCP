@@ -12,6 +12,13 @@ struct Header {
 };
 #pragma pack(pop)  // Restore default packing
 
+enum PacketType {
+    ERROR_RESPONSE = 1,
+    OK_RESPONSE,
+    OK_REQUEST,
+    ERROR_REQUEST
+};
+
 struct ClientData {
     SOCKET socket;
 };
