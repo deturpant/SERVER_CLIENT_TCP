@@ -15,7 +15,25 @@ bool isPacketValid(Header header) {
     for (int i = 0; i < 3; i++) {
         if (header.identity[i] != identify_num[i]) return false;
     }
+    if (header.version != 1) return false;
     return true;
+}
+
+std::string getStrOfPacketType(PacketType pt) {
+    switch (pt) {
+    case PacketType::OK_RESPONSE: {
+        return "RESPONSE_OK";
+    }
+    case PacketType::ERROR_RESPONSE: {
+        return "RESPONSE_ERROR";
+    }
+    case PacketType::OK_REQUEST: {
+        return "REQUEST_OK";
+    }
+    case PacketType::ERROR_REQUEST: {
+        return "REQUEST_ERROR";
+    }
+    }
 }
 
 void receiveMessages(SOCKET serverSocket) {
@@ -23,7 +41,7 @@ void receiveMessages(SOCKET serverSocket) {
     while (true) {
         int bytesReceived = recv(serverSocket, reinterpret_cast<char*>(&header), sizeof(header), 0);
         if (bytesReceived == sizeof(header) && isPacketValid(header)) {
-            std::cout << "Received packet from server: Type " << static_cast<int>(header.packetType) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
+            std::cout << "Received packet from server: Type " << getStrOfPacketType((PacketType)header.packetType) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
             // Receive the data size
             int dataSize;
             int sizeReceived = recv(serverSocket, reinterpret_cast<char*>(&dataSize), sizeof(dataSize), 0);
@@ -97,8 +115,9 @@ int main(int argc, char* argv[]) {
         // Prepare the packet
         Header header;
         strcpy(header.identity, identify_num);
+        header.version = 1;
         header.ID_packet = 123;  // Example packet ID
-        header.packetType = 1;   // Example packet type
+        header.packetType = PacketType::OK_REQUEST;   // Example packet type
         strncpy(header.command, message.c_str(), sizeof(header.command) - 1);
         header.command[sizeof(header.command) - 1] = '\0';  // Ensure null-termination
 
