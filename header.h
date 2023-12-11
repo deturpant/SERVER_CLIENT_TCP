@@ -20,6 +20,3 @@ enum PacketType {
     ERROR_REQUEST
 };
 
-struct ClientData {
-    SOCKET socket;
-};
