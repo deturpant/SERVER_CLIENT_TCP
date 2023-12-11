@@ -19,20 +19,26 @@ bool isPacketValid(Header header) {
     return true;
 }
 
+void printMenu() {
+    std::cout << "GET_INFO -> get some infromation from server\n";
+    std::cout << "GET_RANDOM_VALUE -> get random value from server\n";
+    std::cout << "GET_CURRENT_TIME -> get current time from server\n";
+}
+
 std::string getStrOfPacketType(PacketType pt) {
     switch (pt) {
-    case PacketType::OK_RESPONSE: {
-        return "RESPONSE_OK";
-    }
-    case PacketType::ERROR_RESPONSE: {
-        return "RESPONSE_ERROR";
-    }
-    case PacketType::OK_REQUEST: {
-        return "REQUEST_OK";
-    }
-    case PacketType::ERROR_REQUEST: {
-        return "REQUEST_ERROR";
-    }
+        case PacketType::OK_RESPONSE: {
+            return "RESPONSE_OK";
+        }
+        case PacketType::ERROR_RESPONSE: {
+            return "RESPONSE_ERROR";
+        }
+        case PacketType::OK_REQUEST: {
+            return "REQUEST_OK";
+        }
+        case PacketType::ERROR_REQUEST: {
+            return "REQUEST_ERROR";
+        }
     }
 }
 
@@ -41,7 +47,7 @@ void receiveMessages(SOCKET serverSocket) {
     while (true) {
         int bytesReceived = recv(serverSocket, reinterpret_cast<char*>(&header), sizeof(header), 0);
         if (bytesReceived == sizeof(header) && isPacketValid(header)) {
-            std::cout << "Received packet from server: Type " << getStrOfPacketType((PacketType)header.packetType) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
+            std::cout << "\nReceived packet from server: Type " << getStrOfPacketType((PacketType)header.packetType) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
             // Receive the data size
             int dataSize;
             int sizeReceived = recv(serverSocket, reinterpret_cast<char*>(&dataSize), sizeof(dataSize), 0);
@@ -50,7 +56,7 @@ void receiveMessages(SOCKET serverSocket) {
                 char buffer[1024];
                 int dataReceived = recv(serverSocket, buffer, dataSize, 0);
                 if (dataReceived == dataSize) {
-                    buffer[dataSize] = '\0';  // Ensure null-termination
+                    buffer[dataSize] = '\0'; 
                     std::cout << "Received data from server: " << buffer << std::endl;
                 }
                 else {
@@ -105,7 +111,7 @@ int main(int argc, char* argv[]) {
 
     // Start a separate thread to receive messages from the server
     std::thread(receiveMessages, clientSocket).detach();
-
+    printMenu();
     while (true) {
         // Read a message from the console
         std::string message;
@@ -114,12 +120,13 @@ int main(int argc, char* argv[]) {
 
         // Prepare the packet
         Header header;
+        int randIDPacket = rand() % 30001;
         strcpy(header.identity, identify_num);
         header.version = 1;
-        header.ID_packet = 123;  // Example packet ID
-        header.packetType = PacketType::OK_REQUEST;   // Example packet type
+        header.ID_packet = randIDPacket;
+        header.packetType = PacketType::OK_REQUEST;
         strncpy(header.command, message.c_str(), sizeof(header.command) - 1);
-        header.command[sizeof(header.command) - 1] = '\0';  // Ensure null-termination
+        header.command[sizeof(header.command) - 1] = '\0';
 
         // Send the header
         send(clientSocket, reinterpret_cast<char*>(&header), sizeof(header), 0);
