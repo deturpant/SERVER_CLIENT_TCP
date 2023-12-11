@@ -1,14 +1,24 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include "header.h"
 
+#include "header.h"
 #include <iostream>
 #include <cstring>
 #include <winsock2.h>  // Include the Windows socket header
 #include <vector>
 #include <thread>
+#include <time.h>
 #pragma comment(lib, "ws2_32.lib")  // Link with ws2_32.lib
 
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
 
 std::string getStrOfPacketType(PacketType pt) {
     switch (pt) {
@@ -41,17 +51,18 @@ bool isPacketValid(Header header) {
 
 void sendMessageToClient(SOCKET client, std::string headerCMD, std::string message, PacketType type) {
     // Respond with information
+    int randIDPacket = rand() % 30001;
     Header responseHeader;
     responseHeader.version = 1;
     strcpy(responseHeader.identity, identify_num);
-    responseHeader.ID_packet = 124;  // Example response packet ID
-    responseHeader.packetType = type;   // Example response packet type
+    responseHeader.ID_packet = randIDPacket; 
+    responseHeader.packetType = type;  
     strcpy(responseHeader.command, headerCMD.c_str());
 
     std::string responseData = message;
     int dataSize = responseData.size();
     std::cout << "Send message to client: " << client << " | Type: " << getStrOfPacketType(type) << std::endl;
-    // Send the response header and data in a single block
+
     send(client, reinterpret_cast<char*>(&responseHeader), sizeof(responseHeader), 0);
     send(client, reinterpret_cast<char*>(&dataSize), sizeof(dataSize), 0);
     send(client, responseData.c_str(), dataSize, 0);
@@ -67,6 +78,14 @@ void handleClient(SOCKET clientSocket) {
             // Handle the command
             if (strcmp(header.command, "GET_INFO") == 0) {
                 sendMessageToClient(clientSocket, "INFO_RESPONSE", "This is response to your GET_INFO command", PacketType::OK_RESPONSE);
+            }
+            else if (strcmp(header.command, "GET_RANDOM_VALUE") == 0) {
+                std::string randomValue = std::to_string(rand());
+                randomValue = "Your random value ---> " + randomValue;
+                sendMessageToClient(clientSocket, "RANDOM_RESPONSE", randomValue, PacketType::OK_RESPONSE);
+            }
+            else if (strcmp(header.command, "GET_CURRENT_TIME") == 0) {
+                sendMessageToClient(clientSocket, "CURRENT_TIME_RESPONSE", currentDateTime(), PacketType::OK_RESPONSE);
             }
             else {
                 sendMessageToClient(clientSocket, "ERROR_RESPONSE", "Unknown command", PacketType::ERROR_RESPONSE);
@@ -92,7 +111,7 @@ int main() {
     server_data.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     bind(server, reinterpret_cast<struct sockaddr*>(&server_data), sizeof(server_data));
-    listen(server, 5);
+    listen(server, SOMAXCONN);
 
     std::cout << "Server started on 12222 port\n";
 
