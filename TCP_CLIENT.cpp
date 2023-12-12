@@ -5,9 +5,12 @@
 
 #include <iostream>
 #include <cstring>
+#include <algorithm>
+
 #include <winsock2.h>  // Include the Windows socket header
 #pragma comment(lib, "ws2_32.lib")  // Link with ws2_32.lib
 #include <thread>
+#undef min
 
 const char* identify_num = "\xAF\xAA\xAF";
 
@@ -42,35 +45,30 @@ std::string getStrOfPacketType(PacketType pt) {
     }
 }
 
+
 void receiveMessages(SOCKET serverSocket) {
-    Header header;
+    Message message;
     while (true) {
-        int bytesReceived = recv(serverSocket, reinterpret_cast<char*>(&header), sizeof(header), 0);
-        if (bytesReceived == sizeof(header) && isPacketValid(header)) {
-            std::cout << "\nReceived packet from server: Type " << getStrOfPacketType((PacketType)header.packetType) << ", ID " << header.ID_packet << ", Command: " << header.command << std::endl;
-            // Receive the data size
-            int dataSize;
-            int sizeReceived = recv(serverSocket, reinterpret_cast<char*>(&dataSize), sizeof(dataSize), 0);
-            if (sizeReceived == sizeof(dataSize)) {
-                // Receive the data
-                char buffer[1024];
-                int dataReceived = recv(serverSocket, buffer, dataSize, 0);
-                if (dataReceived == dataSize) {
-                    buffer[dataSize] = '\0'; 
-                    std::cout << "Received data from server: " << buffer << std::endl;
-                }
-                else {
-                    std::cerr << "Failed to receive data from server." << std::endl;
-                    break;
+        int bytesReceived = recv(serverSocket, reinterpret_cast<char*>(&message.header), sizeof(message.header), 0);
+        if (bytesReceived == sizeof(message.header) && isPacketValid(message.header)) {
+            // Receive the data
+            if (message.header.dataSize > 0) {
+                int bytesRead = recv(serverSocket, message.data, (message.header.dataSize < sizeof(message.data)) ? message.header.dataSize : sizeof(message.data), 0);
+                if (bytesRead > 0) {
+                    std::string receivedData(message.data, bytesRead);
+                    std::cout << "\nReceived packet from server: Type " << getStrOfPacketType((PacketType)message.header.packetType)
+                        << ", ID " << message.header.ID_packet << ", Command: " << message.header.command << std::endl;
+
+                    std::cout << "Received data from server: " << receivedData << std::endl;
                 }
             }
             else {
-                std::cerr << "Failed to receive data size from server." << std::endl;
-                break;
             }
         }
     }
 }
+
+
 
 
 int main(int argc, char* argv[]) {
