@@ -52,21 +52,24 @@ bool isPacketValid(Header header) {
 void sendMessageToClient(SOCKET client, std::string headerCMD, std::string message, PacketType type) {
     // Respond with information
     int randIDPacket = rand() % 30001;
-    Header responseHeader;
-    responseHeader.version = 1;
-    strcpy(responseHeader.identity, identify_num);
-    responseHeader.ID_packet = randIDPacket; 
-    responseHeader.packetType = type;  
-    strcpy(responseHeader.command, headerCMD.c_str());
+    Message responseMessage;
+    responseMessage.header.version = 1;
+    strcpy(responseMessage.header.identity, identify_num);
+    responseMessage.header.ID_packet = randIDPacket;
+    responseMessage.header.packetType = type;
+    strcpy(responseMessage.header.command, headerCMD.c_str());
 
-    std::string responseData = message;
-    int dataSize = responseData.size();
+   
+    char* cstr = new char[message.length() + 1];
+    strcpy(cstr, message.c_str());
+    responseMessage.header.dataSize = strlen(cstr);
     std::cout << "Send message to client: " << client << " | Type: " << getStrOfPacketType(type) << std::endl;
 
-    send(client, reinterpret_cast<char*>(&responseHeader), sizeof(responseHeader), 0);
-    send(client, reinterpret_cast<char*>(&dataSize), sizeof(dataSize), 0);
-    send(client, responseData.c_str(), dataSize, 0);
+    send(client, reinterpret_cast<char*>(&responseMessage.header), sizeof(responseMessage.header), 0);
+    send(client, cstr, responseMessage.header.dataSize, 0);
+
 }
+
 
 void handleClient(SOCKET clientSocket) {
     Header header;
